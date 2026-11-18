@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0b0e">
+<title>Atlas 管理台</title>
+<script>
+(function () {
+  var t;
+  try { t = localStorage.getItem('atlas-theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') {
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='4' width='24' height='24' rx='5' fill='none' stroke='%23ff5c46' stroke-width='2.5'/%3E%3Cpath d='M11 21V11M16 21V8M21 21v-7' stroke='%23ff5c46' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body class="ad-body">
+
+<!-- ============================ 登录 ============================ -->
+<div class="ad-login" id="login-view">
+  <form class="ad-login-card" id="login-form" autocomplete="off">
+    <div class="ad-login-mark">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="4" y="4" width="24" height="24" rx="5" stroke="currentColor" stroke-width="2.2"/>
+        <path d="M11 21V11M16 21V8M21 21v-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="ad-login-kicker">ATLAS STUDIO</div>
+    <h1>管理台</h1>
+    <p class="ad-login-sub">用管理员账号登录 · 来源记录 / 账号 / 作品 / 设置</p>
+    <input type="text" id="adm-user" placeholder="用户名" autocomplete="username" autocapitalize="off" spellcheck="false">
+    <input type="password" id="pw" placeholder="密码" autocomplete="current-password">
+    <button type="submit" id="login-btn">进入管理台</button>
+    <div class="ad-login-err" id="login-err" role="alert"></div>
+    <button type="button" class="ad-login-alt" id="emergency-toggle">应急口令登录</button>
+    <div class="ad-emergency" id="emergency-row" hidden>
+      <input type="password" id="em-pw" placeholder="旧版全局口令（admin.json）" autocomplete="off">
+      <button type="button" class="ad-btn" id="em-btn">用口令进入</button>
+    </div>
+    <a class="ad-login-back" href="/">&larr; 返回创作台</a>
+  </form>
+</div>
+
+<!-- ============================ 主面板 ============================ -->
+<div class="ad-shell" id="panel" hidden>
+
+  <aside class="ad-rail">
+    <div class="ad-brand">
+      <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+        <rect x="4" y="4" width="24" height="24" rx="5" stroke="currentColor" stroke-width="2.2"/>
+        <path d="M11 21V11M16 21V8M21 21v-7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+      </svg>
+      <div><b>Atlas</b><span>管理台</span></div>
+    </div>
+
+    <nav class="ad-nav" id="nav">
+      <button type="button" data-sec="records"><i>01</i>来源记录</button>
+      <button type="button" data-sec="users"><i>02</i>账号</button>
+      <button type="button" data-sec="works"><i>03</i>作品</button>
+      <button type="button" data-sec="settings"><i>04</i>设置</button>
+    </nav>
+
+    <div class="ad-rail-foot">
+      <button class="theme-btn" id="theme-toggle" type="button" aria-label="切换明暗主题" title="切换明暗主题">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.5 14.3A8.6 8.6 0 019.7 3.5a8.6 8.6 0 1010.8 10.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6"/></svg>
+      </button>
+      <a class="ad-rail-link" href="/" title="回到创作台">创作台</a>
+      <button class="ad-rail-link" id="logout" type="button">退出</button>
+    </div>
+  </aside>
+
+  <main class="ad-main">
+    <div class="ad-stats" id="stats"></div>
+
+    <!-- ---------------- 来源记录 ---------------- -->
+    <section class="ad-sec" id="sec-records">
+      <div class="ad-sec-head">
+        <div>
+          <h2>来源记录</h2>
+          <p id="rec-sub">每条任务的用户 / IP / 浏览器 / 引擎</p>
+        </div>
+        <div class="ad-sec-acts">
+          <button type="button" class="ad-btn" id="rec-refresh">刷新</button>
+          <a class="ad-btn primary" id="rec-export" href="/api/admin/export.csv">导出 CSV</a>
+        </div>
+      </div>
+
+      <div class="ad-filters">
+        <div class="ad-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>
+          <input id="f-q" type="search" placeholder="搜提示词…" autocomplete="off">
+        </div>
+        <label class="ad-field"><span>用户</span>
+          <select id="f-uid"><option value="">全部</option></select>
+        </label>
+        <label class="ad-field"><span>引擎</span>
+          <select id="f-engine">
+            <option value="">全部</option>
+            <option value="local">本地</option>
+            <option value="cloud">云端</option>
+          </select>
+        </label>
+        <label class="ad-field"><span>状态</span>
+          <select id="f-status">
+            <option value="">全部</option>
+            <option value="done">成功</option>
+            <option value="error">失败</option>
+          </select>
+        </label>
+        <label class="ad-field"><span>时间</span>
+          <select id="f-days">
+            <option value="0">全部</option>
+            <option value="1">今天</option>
+            <option value="7">近 7 天</option>
+            <option value="30">近 30 天</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="ad-table-wrap">
+        <table class="ad-table" id="rec-table">
+          <thead>
+            <tr>
+              <th style="width:118px">时间</th>
+              <th style="width:120px">用户</th>
+              <th style="width:112px">IP</th>
+              <th style="width:130px">浏览器</th>
+              <th style="width:64px">模式</th>
+              <th style="width:64px">引擎</th>
+              <th style="width:64px">状态</th>
+              <th style="width:70px">耗时</th>
+              <th>提示词</th>
+              <th style="width:120px">作品</th>
+            </tr>
+          </thead>
+          <tbody id="rec-body"></tbody>
+        </table>
+      </div>
+      <div class="ad-pager" id="rec-pager"></div>
+    </section>
+
+    <!-- ---------------- 账号 ---------------- -->
+    <section class="ad-sec" id="sec-users" hidden>
+      <div class="ad-sec-head">
+        <div>
+          <h2>账号</h2>
+          <p id="usr-sub">登录账号、角色与产出；封禁立即生效</p>
+        </div>
+        <div class="ad-sec-acts">
+          <div class="ad-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>
+            <input id="usr-q" type="search" placeholder="搜账号 / IP…" autocomplete="off">
+          </div>
+          <button type="button" class="ad-btn" id="usr-refresh">刷新</button>
+          <button type="button" class="ad-btn primary" id="usr-create">新建账号</button>
+        </div>
+      </div>
+
+      <div class="ad-table-wrap">
+        <table class="ad-table">
+          <thead>
+            <tr>
+              <th style="width:150px">账号</th>
+              <th style="width:86px">角色</th>
+              <th style="width:78px">状态</th>
+              <th style="width:74px">作品</th>
+              <th style="width:130px">注册</th>
+              <th style="width:130px">最近登录</th>
+              <th style="width:110px">IP</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="usr-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ---------------- 作品 ---------------- -->
+    <section class="ad-sec" id="sec-works" hidden>
+      <div class="ad-sec-head">
+        <div>
+          <h2>作品</h2>
+          <p id="work-sub">全部用户产出的图片</p>
+        </div>
+        <div class="ad-sec-acts">
+          <label class="ad-field"><span>用户</span>
+            <select id="w-uid"><option value="">全部</option></select>
+          </label>
+          <button type="button" class="ad-btn" id="work-refresh">刷新</button>
+        </div>
+      </div>
+      <div class="ad-works" id="work-grid"></div>
+      <div class="ad-pager" id="work-pager"></div>
+    </section>
+
+    <!-- ---------------- 设置 ---------------- -->
+    <section class="ad-sec" id="sec-settings" hidden>
+      <div class="ad-sec-head">
+        <div>
+          <h2>设置</h2>
+          <p>安全与数据维护</p>
+        </div>
+      </div>
+
+      <div class="ad-cards">
+        <div class="ad-card">
+          <h3>注册与准入</h3>
+          <p class="ad-card-note">关掉自助注册后，只能由管理员在「账号」里开号。</p>
+          <label class="ad-switch">
+            <input type="checkbox" id="set-open">
+            <span>允许自助注册</span>
+          </label>
+          <label class="ad-field block"><span>邀请码（留空 = 不需要）</span>
+            <input type="text" id="set-invite" placeholder="例如：atlas-2026" autocomplete="off"></label>
+          <label class="ad-field block"><span>站点名称</span>
+            <input type="text" id="set-site" placeholder="Atlas Studio"></label>
+          <div class="ad-btn-row">
+            <button type="button" class="ad-btn primary" id="set-save">保存</button>
+          </div>
+        </div>
+
+        <div class="ad-card">
+          <h3>我的账号</h3>
+          <p class="ad-card-note" id="me-note">…</p>
+          <form id="pw-form" autocomplete="off">
+            <label class="ad-field block"><span>当前密码</span>
+              <input type="password" id="pw-cur" autocomplete="current-password"></label>
+            <label class="ad-field block"><span>新密码（至少 6 位）</span>
+              <input type="password" id="pw-new" autocomplete="new-password"></label>
+            <label class="ad-field block"><span>确认新密码</span>
+              <input type="password" id="pw-new2" autocomplete="new-password"></label>
+            <button type="submit" class="ad-btn primary">更新密码</button>
+          </form>
+        </div>
+
+        <div class="ad-card">
+          <h3>公共老作品归属</h3>
+          <p class="ad-card-note" id="legacy-note">…</p>
+          <label class="ad-field block"><span>目标账号</span>
+            <input type="text" id="claim-uid" placeholder="例如：liubin"></label>
+          <div class="ad-btn-row">
+            <button type="button" class="ad-btn primary" id="claim-do">划给他</button>
+            <button type="button" class="ad-btn" id="claim-release">收回公共</button>
+          </div>
+          <p class="ad-card-note">
+            隔离前的老作品（无归属）只有管理员能看到；划给账号后就是那个人的相册。
+          </p>
+        </div>
+
+        <div class="ad-card">
+          <h3>作品并入</h3>
+          <p class="ad-card-note">把 A 名下的作品（文件一起）转到 B，A 的账号不受影响。用于合并历史身份。</p>
+          <div class="ad-pair">
+            <label class="ad-field block"><span>从</span>
+              <input type="text" id="tr-from" placeholder="旧账号 / 历史身份" autocapitalize="off"></label>
+            <label class="ad-field block"><span>到</span>
+              <input type="text" id="tr-to" placeholder="目标账号" autocapitalize="off"></label>
+          </div>
+          <div class="ad-btn-row">
+            <button type="button" class="ad-btn primary" id="tr-do">并入</button>
+          </div>
+        </div>
+
+        <div class="ad-card">
+          <h3>系统信息</h3>
+          <dl class="ad-kv" id="sys-info"></dl>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="ad-toast" id="toast" hidden></div>
+<div class="ad-lightbox" id="lightbox" hidden><img id="lb-img" alt=""></div>
+
+<!-- 新建账号 / 重置密码 -->
+<div class="ad-modal" id="acc-modal" hidden>
+  <form class="ad-modal-card" id="acc-form" autocomplete="off">
+    <h3 id="acc-title">新建账号</h3>
+    <p class="ad-modal-sub" id="acc-sub">用户名会成为作品目录名，建好后不能改。</p>
+    <label class="ad-field block"><span>用户名</span>
+      <input type="text" id="acc-uid" autocapitalize="off" spellcheck="false" placeholder="小写字母/数字，3~24 位"></label>
+    <label class="ad-field block"><span id="acc-pw-label">初始密码</span>
+      <input type="password" id="acc-pw" autocomplete="new-password" placeholder="至少 6 位"></label>
+    <label class="ad-field block" id="acc-role-row"><span>角色</span>
+      <select id="acc-role">
+        <option value="user">普通用户</option>
+        <option value="admin">管理员</option>
+      </select></label>
+    <div class="ad-modal-err" id="acc-err" hidden></div>
+    <div class="ad-btn-row end">
+      <button type="button" class="ad-btn" id="acc-cancel">取消</button>
+      <button type="submit" class="ad-btn primary" id="acc-ok">创建</button>
+    </div>
+  </form>
+</div>
+
+<script type="module" src="/js/admin.js"></script>
+</body>
+</html>

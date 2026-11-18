@@ -1,0 +1,18 @@
+{
+  "name": "Atlas Studio — 图像创作台",
+  "short_name": "Atlas",
+  "description": "本地 Qwen-Image-2.1 图像创作台：文生图、图片编辑、透明贴纸",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08080a",
+  "theme_color": "#08080a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%2308080a'/%3E%3Ccircle cx='256' cy='256' r='168' fill='none' stroke='%23e8a33d' stroke-width='18'/%3E%3Ccircle cx='256' cy='256' r='64' fill='%23e8a33d'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

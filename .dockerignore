@@ -1,0 +1,8 @@
+*
+!requirements.txt
+!backend/
+backend/*
+!backend/server.py
+!backend/prompts.json
+!web/
+!web/**

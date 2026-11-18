@@ -1,0 +1,16 @@
+{
+  "categories": [
+    "全部",
+    "示例"
+  ],
+  "items": [
+    {
+      "id": "example-landscape",
+      "title": "山间晨雾",
+      "category": "示例",
+      "ratio": "1:1",
+      "zh": "山间晨雾与远处松林，柔和晨光",
+      "prompt": "A peaceful mountain landscape with morning mist and distant pine trees, soft morning light."
+    }
+  ]
+}

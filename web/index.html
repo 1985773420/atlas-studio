@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#08090b">
+<meta name="description" content="Atlas Studio — 纯云端 AI 图像创作台。一句话显影成图，4K 输出，作品自动归档。">
+<title>Atlas Studio — 让想象显影</title>
+<script>
+/* 主题必须在样式表之前定下来，否则会闪一下白/黑 */
+(function () {
+  var t;
+  try { t = localStorage.getItem('atlas-theme'); } catch (e) {}
+  if (t !== 'light' && t !== 'dark') {
+    t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+  }
+  document.documentElement.dataset.theme = t;
+})();
+</script>
+<link rel="preload" href="/assets/fonts/instrument-serif.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/instrument-serif-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/atlas.css?v=20261118v13">
+<link rel="stylesheet" href="/css/darkroom.css?v=2">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='none' stroke='%23ff5a3c' stroke-width='2.2'/%3E%3Cpath d='M16 8.4 22.6 12.2v7.6L16 23.6 9.4 19.8v-7.6Z' fill='none' stroke='%23ff5a3c' stroke-width='1.8'/%3E%3Ccircle cx='16' cy='16' r='2' fill='%23ff5a3c'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<!-- ======================== 登录门 ======================== -->
+<div class="gate" id="gate" hidden>
+  <div class="gate-art" aria-hidden="true">
+    <div class="gate-art-wall">
+      <figure class="gate-art-card ga1"><img src="/placeholder.svg" alt=""></figure>
+      <figure class="gate-art-card ga2"><img src="/placeholder.svg" alt=""></figure>
+      <figure class="gate-art-card ga3"><img src="/placeholder.svg" alt=""></figure>
+      <figure class="gate-art-card ga4"><img src="/placeholder.svg" alt=""></figure>
+      <figure class="gate-art-card ga5"><img src="/placeholder.svg" alt=""></figure>
+    </div>
+    <div class="gate-art-shade"></div>
+    <div class="gate-art-copy">
+      <p class="eyebrow light"><span class="live-pin"></span> ATLAS · CLOUD IMAGE STUDIO</p>
+      <h1>Make it<br><em>visible.</em></h1>
+      <p>一句话，一张作品。你的私人暗房，云端显影。</p>
+    </div>
+  </div>
+
+  <div class="gate-panel">
+    <div class="gate-top">
+      <span class="brand-text">ATLAS<em>STUDIO</em></span>
+      <button type="button" class="theme-btn" id="gate-theme" aria-label="切换明暗主题" title="切换明暗主题">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.5 14.3A8.6 8.6 0 019.7 3.5a8.6 8.6 0 1010.8 10.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6"/></svg>
+      </button>
+    </div>
+
+    <div class="gate-card">
+      <p class="eyebrow" id="g-eyebrow">ATLAS · 图像创作台</p>
+      <h2 id="g-title">进入暗房</h2>
+      <p class="gate-sub" id="g-sub">登录后开始创作。作品按账号存放，别人看不到你的东西。</p>
+
+      <div class="gate-tabs" role="tablist" aria-label="登录或注册">
+        <button type="button" role="tab" data-tab="login" aria-selected="true">登录</button>
+        <button type="button" role="tab" data-tab="register" aria-selected="false">注册</button>
+        <span class="gate-thumb" id="gate-thumb" aria-hidden="true"></span>
+      </div>
+
+      <form id="gate-form" autocomplete="on" novalidate>
+        <label class="gf">
+          <span>用户名</span>
+          <input id="g-user" name="username" type="text" autocomplete="username"
+                 autocapitalize="off" spellcheck="false" placeholder="小写字母或数字，3~24 位">
+        </label>
+        <label class="gf">
+          <span>密码</span>
+          <input id="g-pass" name="password" type="password" autocomplete="current-password" placeholder="至少 6 位">
+        </label>
+        <label class="gf" id="g-pass2-row" hidden>
+          <span>确认密码</span>
+          <input id="g-pass2" type="password" autocomplete="new-password" placeholder="再输一次">
+        </label>
+        <label class="gf" id="g-invite-row" hidden>
+          <span>邀请码</span>
+          <input id="g-invite" type="text" autocomplete="off" placeholder="向管理员索取">
+        </label>
+        <p class="gate-err" id="g-err" role="alert" hidden></p>
+        <button type="submit" class="gate-submit" id="g-submit">
+          <span id="g-submit-text">登录</span>
+          <span class="gate-spin" aria-hidden="true"></span>
+          <svg class="gate-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+
+      <p class="gate-note" id="g-note"></p>
+    </div>
+
+    <p class="gate-foot">POWERED BY CLOUD · NO LOCAL GPU</p>
+  </div>
+</div>
+
+<!-- ======================== 环境层 ======================== -->
+<div class="ambient" aria-hidden="true">
+  <div class="ambient-aurora"></div>
+  <div class="ambient-beam"></div>
+  <div class="ambient-grain"></div>
+  <div class="ambient-vignette"></div>
+</div>
+
+<!-- ======================== 顶栏 ======================== -->
+<header class="bar" id="bar">
+  <div class="bar-inner">
+    <a class="brand" href="/" aria-label="Atlas Studio">
+      <span class="brand-aperture" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="9.6" stroke="currentColor" stroke-width="1.05" opacity=".45"/>
+          <g class="ap-rot" stroke="currentColor" stroke-linejoin="round">
+            <path d="M12 6.2 17.05 9.1v5.8L12 17.8 6.95 14.9V9.1L12 6.2Z" stroke-width="1.15"/>
+            <path d="M12 6.2V2.7M17.05 9.1 20.1 7.35M17.05 14.9l3.05 1.75M12 17.8v3.5M6.95 14.9 3.9 16.65M6.95 9.1 3.9 7.35" stroke-width="1" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </span>
+      <span class="brand-text">ATLAS<em>STUDIO</em></span>
+    </a>
+
+    <nav class="nav" id="nav" aria-label="主导航">
+      <a class="nav-item" href="#/create" data-view="create">创作<span class="nav-run" id="nav-run" hidden></span></a>
+      <a class="nav-item" href="#/gallery" data-view="gallery">画廊<span class="nav-count" id="nav-count" hidden></span></a>
+    </nav>
+
+    <div class="bar-right">
+      <div class="live" id="live" data-state="wait" role="status" aria-live="polite">
+        <span class="live-dot" aria-hidden="true"></span>
+        <span id="live-text">连接中</span>
+      </div>
+      <button type="button" class="icon-btn lib-btn" id="open-library" aria-haspopup="dialog" title="提示词库 (⌘K)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+          <path d="M4 5.5A2.5 2.5 0 016.5 3H19v16H6.5A2.5 2.5 0 004 21.5V5.5z"/><path d="M8 8h7M8 12h5"/>
+        </svg>
+        <span class="label">提示词库</span>
+        <span class="count" id="lib-count"></span>
+        <kbd>⌘K</kbd>
+      </button>
+      <button type="button" class="theme-btn" id="theme-toggle" aria-label="切换明暗主题" title="切换明暗主题">
+        <svg class="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M20.5 14.3A8.6 8.6 0 019.7 3.5a8.6 8.6 0 1010.8 10.8z"/></svg>
+        <svg class="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4L17 7M7 17l-1.6 1.6"/></svg>
+      </button>
+      <div class="user" id="user-box">
+        <button type="button" class="user-chip" id="user-chip" aria-haspopup="menu" aria-expanded="false" aria-label="账号菜单">
+          <span class="user-av" id="user-av">A</span>
+          <span class="user-name" id="user-name"></span>
+        </button>
+        <div class="user-menu" id="user-menu" role="menu" hidden>
+          <div class="um-head">
+            <b id="um-name"></b>
+            <span id="um-meta"></span>
+          </div>
+          <button type="button" role="menuitem" data-act="password">修改密码</button>
+          <a role="menuitem" id="admin-link" href="/admin" hidden>管理台</a>
+          <button type="button" role="menuitem" data-act="logout" class="danger">退出登录</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="bar-progress" id="bar-progress" aria-hidden="true"></div>
+</header>
+
+<main class="stage">
+
+  <!-- ============================ 创作间 ============================ -->
+  <section class="view" id="view-create">
+
+    <section class="hero" id="hero">
+      <div class="hero-copy">
+        <p class="eyebrow reveal"><span class="live-pin"></span> ATLAS STUDIO <span class="sep">/</span> 数字暗房</p>
+        <h1 class="hero-title reveal">
+          <span class="line">把想象，</span>
+          <span class="line"><em>显影</em>成图。</span>
+        </h1>
+        <p class="lede reveal">写下你想看到的画面，或上传参考图继续创作。云端生成，作品自动收进你的画廊。</p>
+
+        <div class="hero-actions reveal">
+          <a class="btn-primary" href="#bench" data-scroll="bench">
+            开始创作
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+          </a>
+          <button type="button" class="btn-ghost" id="surprise">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3l1.7 5.1L19 10l-5.3 1.9L12 17l-1.7-5.1L5 10l5.3-1.9L12 3z"/><path d="M18.5 15.5l.8 2.4 2.2.8-2.2.8-.8 2.4-.8-2.4-2.2-.8 2.2-.8.8-2.4z"/></svg>
+            给我一个灵感
+          </button>
+        </div>
+
+        <div class="ideas reveal" id="ideas" aria-label="灵感">
+          <button type="button" class="idea" data-idea="雨夜的霓虹街头，湿漉漉的地面倒映着招牌，赛博朋克电影感">雨夜霓虹街头</button>
+          <button type="button" class="idea" data-idea="清晨薄雾中的湖畔小木屋，窗内透出温暖灯光，湖面倒影，写实摄影">雾中湖畔小木屋</button>
+          <button type="button" class="idea" data-idea="一只戴着飞行员护目镜的柴犬坐在复古螺旋桨飞机驾驶舱里，云海日落，电影感摄影">柴犬飞行员</button>
+          <button type="button" class="idea" data-idea="A minimalist product shot of a ceramic coffee cup on a stone surface, soft morning light, high detail">极简产品图</button>
+          <button type="button" class="idea" data-idea="Chinese ink wash painting of a solitary swordsman on a snowy cliff, long robes whipping in the wind, expressive dry-brush strokes">武侠水墨人物</button>
+        </div>
+
+        <p class="hero-detail">文生图 <span>·</span> 图片编辑 <span>·</span> 最高 4K</p>
+      </div>
+
+      <div class="exposure" aria-label="灵感预览">
+        <div class="exposure-top"><span>ATLAS / CONTACT SHEET</span><span id="exposure-frame">01 / 03</span></div>
+        <div class="exposure-plate">
+          <img id="exposure-image" src="/placeholder.svg" alt="雨夜霓虹街头" fetchpriority="high">
+        </div>
+        <div class="exposure-bottom">
+          <div aria-live="polite"><small>灵感样片</small><strong id="exposure-title">雨夜霓虹街头</strong></div>
+          <div class="exposure-controls">
+            <button type="button" id="exposure-prev" aria-label="上一张灵感">←</button>
+            <button type="button" id="exposure-next" aria-label="下一张灵感">→</button>
+            <button type="button" id="exposure-use">使用灵感 <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="bench" id="bench">
+      <div class="bench-head">
+        <span class="section-index">01</span>
+        <h2>创作台 <em>Composer</em></h2>
+        <span class="bench-rule"></span>
+        <span class="bench-status"><span class="live-pin"></span> CLOUD ONLY</span>
+      </div>
+
+      <form class="composer" id="composer" autocomplete="off">
+        <div class="error" id="error" role="alert" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 8v5M12 16.5v.5"/><circle cx="12" cy="12" r="9"/></svg>
+          <span id="error-text"></span>
+        </div>
+
+        <div class="composer-top">
+          <div class="segmented" id="modes" role="tablist" aria-label="创作模式">
+            <span class="seg-thumb" id="seg-thumb" aria-hidden="true"></span>
+            <button type="button" class="seg" role="tab" data-mode="generate" aria-selected="true">文生图</button>
+            <button type="button" class="seg" role="tab" data-mode="edit" aria-selected="false">图片编辑</button>
+            <button type="button" class="seg" role="tab" data-mode="sticker" aria-selected="false">透明贴纸</button>
+          </div>
+          <div class="engine-picker" id="engine-picker">
+            <button type="button" class="eng-trigger" id="eng-trigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="eng-dot" aria-hidden="true"></span>
+              <span class="eng-label" id="eng-label">云端模型</span>
+              <span class="eng-count" id="eng-count"></span>
+              <svg class="eng-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div class="eng-menu" id="eng-menu" role="listbox" aria-label="云端模型" hidden></div>
+          </div>
+        </div>
+
+        <div class="prompt-block">
+          <div class="prompt-head">
+            <label for="prompt">提示词 <small>PROMPT</small></label>
+            <span id="prompt-count">0</span>
+          </div>
+          <div class="prompt-row">
+            <textarea id="prompt" rows="1" spellcheck="false" placeholder="描述你想要的画面…"></textarea>
+          </div>
+        </div>
+
+        <div class="option-grid">
+          <div class="opt-block">
+            <span class="opt-label">分辨率</span>
+            <div class="group" id="size-group"></div>
+          </div>
+          <div class="opt-block">
+            <span class="opt-label">画面比例</span>
+            <div class="group" id="ratio-group"></div>
+          </div>
+          <div class="opt-block">
+            <span class="opt-label">数量</span>
+            <div class="group" id="count-group"></div>
+          </div>
+          <button type="button" class="seed-btn" id="seed-toggle" aria-expanded="false">随机种子</button>
+        </div>
+
+        <div class="row ref" id="ref-row" hidden>
+          <button type="button" class="dropzone" id="dropzone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="M21 15l-4.5-4.5L6 21"/>
+            </svg>
+            <span id="dz-text">上传参考图</span>
+            <input type="file" id="ref-input" accept="image/png,image/jpeg,image/webp" hidden>
+          </button>
+          <span class="ref-note" id="ref-note"></span>
+        </div>
+
+        <div class="row seed" id="seed-row" hidden>
+          <label for="seed">随机种子</label>
+          <input id="seed" type="text" inputmode="numeric" placeholder="留空随机；固定可复现同一张">
+        </div>
+
+        <div class="composer-foot">
+          <div class="compose-tools">
+            <button type="button" id="compose-library">提示词库</button>
+            <button type="button" id="restore-prompt" hidden>撤销替换</button>
+            <span class="compose-shortcut">Ctrl / ⌘ + Enter</span>
+          </div>
+            <button class="run" id="run" type="submit" aria-label="开始生成">
+              <svg class="run-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              <span class="run-spinner" aria-hidden="true"></span>
+              <span class="run-label">生成图像</span>
+              <span class="run-badge" id="run-badge" hidden></span>
+            </button>
+        </div>
+      </form>
+
+      <p class="bench-foot" id="bench-foot" hidden>
+        <a class="ghost-link" href="#/gallery" data-go="gallery">
+          画廊里有 <b id="bench-count">0</b> 张作品，去看全部 <span aria-hidden="true">→</span>
+        </a>
+      </p>
+    </div>
+
+    <section class="tray" id="tray" hidden>
+      <div class="sec-head">
+        <div class="sec-title">
+          <span class="section-index">02</span>
+          <h2>暗房 <em>Darkroom</em></h2>
+          <p class="sec-sub" id="tray-note">本次的任务与成品都停在这里；清空只是清屏，作品已在画廊</p>
+        </div>
+        <button type="button" class="ghost-btn" id="tray-clear">清空托盘</button>
+      </div>
+      <div class="tray-grid" id="tray-grid"></div>
+    </section>
+  </section>
+
+  <!-- ============================ 画廊 ============================ -->
+  <section class="view" id="view-gallery" hidden>
+    <header class="gal-head">
+      <div class="gal-title">
+        <p class="eyebrow"><span class="live-pin"></span> ARCHIVE <span class="sep">/</span> 你的作品</p>
+        <h1>作品集 <em>Works</em></h1>
+        <p class="gal-sub" id="gal-sub">…</p>
+      </div>
+      <div class="gal-actions">
+        <div class="gal-filters" id="gal-filters" role="group" aria-label="筛选作品">
+          <button type="button" class="gal-filter" data-filter="all" aria-pressed="true">全部</button>
+          <button type="button" class="gal-filter" data-filter="generate" aria-pressed="false">文生图</button>
+          <button type="button" class="gal-filter" data-filter="edit" aria-pressed="false">编辑</button>
+          <button type="button" class="gal-filter" data-filter="sticker" aria-pressed="false">贴纸</button>
+        </div>
+        <button type="button" class="ghost-btn" id="gal-refresh">刷新</button>
+      </div>
+    </header>
+
+    <section class="feed" id="feed" aria-label="我的作品"></section>
+
+    <div class="empty" id="gal-empty" hidden>
+      <div class="empty-orbit" aria-hidden="true">
+        <svg viewBox="0 0 220 220" fill="none">
+          <circle cx="110" cy="110" r="96" stroke="currentColor" stroke-width="1" opacity=".35"/>
+          <circle cx="110" cy="110" r="74" stroke="currentColor" stroke-width="9" stroke-dasharray="1.4 8" opacity=".3"/>
+          <path d="M110 54 158 82v56l-48 28-48-28V82Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" opacity=".6"/>
+          <circle cx="110" cy="110" r="22" stroke="currentColor" stroke-width="1" opacity=".45"/>
+          <circle cx="110" cy="110" r="3" fill="currentColor" opacity=".6"/>
+        </svg>
+      </div>
+      <p class="empty-title">画廊还是空的</p>
+      <p class="empty-sub">去创作间生成第一张，成品会自动挂到这里。</p>
+      <a class="btn-primary" href="#/create" data-go="create">去创作 <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
+</main>
+
+<!-- ======================== 提示词库 ======================== -->
+<section class="sheet" id="library" role="dialog" aria-modal="true" aria-label="提示词库" aria-hidden="true">
+  <div class="sheet-inner">
+    <div class="sheet-bar">
+      <div class="sheet-title">
+        <p class="eyebrow"><span class="live-pin"></span> PROMPT ARCHIVE</p>
+        <h2>提示词库 <em>Recipe Library</em></h2>
+        <p class="sheet-sub" id="lib-sub">配方一键载入提示条；也可以复制走</p>
+      </div>
+      <button type="button" class="sheet-close" id="close-library" aria-label="关闭">
+        <span>关闭</span>
+        <kbd>ESC</kbd>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="sheet-tools">
+      <label class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2"/></svg>
+        <input id="lib-search" type="search" placeholder="搜风格、场景、关键词…" autocomplete="off">
+        <kbd>/</kbd>
+      </label>
+      <div class="cats" id="lib-cats"></div>
+    </div>
+    <div class="lib-grid" id="lib-grid"></div>
+  </div>
+</section>
+
+<!-- ======================== 作品查看器 ======================== -->
+<div class="viewer" id="viewer" role="dialog" aria-modal="true" aria-label="作品预览" aria-hidden="true">
+  <button type="button" class="viewer-close" id="viewer-close" aria-label="关闭">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <button type="button" class="viewer-nav prev" id="viewer-prev" aria-label="上一张">&#8249;</button>
+  <button type="button" class="viewer-nav next" id="viewer-next" aria-label="下一张">&#8250;</button>
+  <figure class="viewer-stage">
+    <div class="viewer-img-wrap"><img id="viewer-img" alt=""></div>
+    <figcaption class="viewer-cap" id="viewer-cap"></figcaption>
+  </figure>
+  <div class="viewer-actions">
+    <a class="viewer-btn" id="viewer-dl" download aria-label="下载原图" title="下载原图">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+    </a>
+    <button type="button" class="viewer-btn" id="viewer-save-prompt" aria-label="收藏到提示词库" title="收藏到提示词库">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg>
+    </button>
+    <button type="button" class="viewer-btn" id="viewer-reuse" aria-label="用这张继续创作" title="用这张继续创作">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1015-6.7M21 3v6h-6"/></svg>
+    </button>
+  </div>
+  <div class="viewer-hint"><kbd>←</kbd><kbd>→</kbd> 翻页 <span>·</span> <kbd>ESC</kbd> 关闭</div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<!-- ======================== 修改密码 ======================== -->
+<div class="modal" id="pw-modal" role="dialog" aria-modal="true" aria-label="修改密码" hidden>
+  <form class="modal-card" id="pw-form" autocomplete="off">
+    <h2>修改密码</h2>
+    <p class="modal-sub">改完其他设备上的登录会自动失效，需要重新登录。</p>
+    <label class="gf"><span>当前密码</span>
+      <input id="pw-cur" type="password" autocomplete="current-password"></label>
+    <label class="gf"><span>新密码（至少 6 位）</span>
+      <input id="pw-new" type="password" autocomplete="new-password"></label>
+    <label class="gf"><span>确认新密码</span>
+      <input id="pw-new2" type="password" autocomplete="new-password"></label>
+    <p class="gate-err" id="pw-err" role="alert" hidden></p>
+    <div class="modal-acts">
+      <button type="button" class="pbtn ghost" id="pw-cancel">取消</button>
+      <button type="submit" class="pbtn primary">保存</button>
+    </div>
+  </form>
+</div>
+
+<!-- ======================== 模板 ======================== -->
+<template id="tpl-card">
+  <article class="card">
+    <div class="card-media">
+      <img alt="" loading="lazy" decoding="async">
+      <canvas class="reveal-canvas" aria-hidden="true"></canvas>
+      <span class="card-glare" aria-hidden="true"></span>
+      <div class="card-actions">
+        <button type="button" class="act" data-act="download" aria-label="下载原图" title="下载原图">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>
+        </button>
+        <button type="button" class="act" data-act="reuse" aria-label="用这张继续创作" title="用这张继续创作">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1015-6.7M21 3v6h-6"/></svg>
+        </button>
+      </div>
+      <div class="card-info">
+        <span class="card-mode" data-mode-label></span>
+        <p class="card-prompt" data-prompt-text></p>
+      </div>
+    </div>
+  </article>
+</template>
+
+<template id="tpl-job">
+  <article class="job">
+    <canvas class="job-field" aria-hidden="true"></canvas>
+    <span class="job-frame" aria-hidden="true"></span>
+    <div class="job-core">
+      <div class="aperture" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none" stroke="currentColor">
+          <circle cx="24" cy="24" r="19.6" stroke-width="1.3" stroke-dasharray="1.5 5.6" opacity=".5"/>
+          <g class="ap-rot" stroke-width="1.35" stroke-linejoin="round">
+            <path d="M24 9.8 36.3 16.9v14.2L24 38.2 11.7 31.1V16.9L24 9.8Z"/>
+            <path d="M24 9.8V4.6M36.3 16.9l4.5-2.6M36.3 31.1l4.5 2.6M24 38.2v5.2M11.7 31.1l-4.5 2.6M11.7 16.9l-4.5-2.6" stroke-width="1.2" stroke-linecap="round"/>
+          </g>
+        </svg>
+      </div>
+      <p class="job-status" data-status>正在提交…</p>
+      <p class="job-meta" data-meta></p>
+      <div class="job-bar" data-bar><span class="job-bar-fill" data-fill></span></div>
+      <p class="job-time" data-time hidden></p>
+    </div>
+  </article>
+</template>
+
+<template id="tpl-recipe">
+  <article class="recipe">
+    <div class="recipe-media">
+      <img alt="" loading="lazy">
+      <span class="recipe-ratio" data-ratio></span>
+    </div>
+    <div class="recipe-body">
+      <p class="recipe-cat" data-cat></p>
+      <h3 class="recipe-title" data-title></h3>
+      <p class="recipe-zh" data-zh></p>
+      <p class="recipe-prompt" data-prompt></p>
+      <div class="recipe-actions">
+        <button type="button" class="pbtn primary" data-use>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13M13 6l6 6-6 6"/></svg>
+          用这个生成
+        </button>
+        <button type="button" class="pbtn ghost" data-copy aria-label="复制提示词" title="复制提示词">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 012-2h9"/></svg>
+        </button>
+      </div>
+    </div>
+  </article>
+</template>
+
+<script type="module" src="/js/app.js?v=20261118v13"></script>
+<script type="module" src="/js/polish.js?v=20261118v13"></script>
+</body>
+</html>
